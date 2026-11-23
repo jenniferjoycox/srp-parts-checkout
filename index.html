@@ -119,5 +119,35 @@
     scanner = null;
   }
 </script>
+  
+<button type="button" onclick="testConnection()">
+  Test Google Sheets Connection
+</button>
+
+<script>
+async function testConnection() {
+  const url = "https://script.google.com/macros/s/AKfycbzQ4i2TBJBhDZ-LXD3Z6UvPa1-Hmx60OYpNmhn8AQv3zm8P4rqztBbNt3Hc70Fmljbh/exec";
+
+  document.getElementById("status").textContent =
+    "Testing connection...";
+
+  try {
+    await fetch(url, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "text/plain"
+      },
+      body: JSON.stringify({ action: "connectionTest" })
+    });
+
+    document.getElementById("status").textContent =
+      "Request sent. Check Apps Script executions to confirm receipt.";
+  } catch (err) {
+    document.getElementById("status").textContent =
+      "Connection error: " + err.message;
+  }
+}
+</script>
 </body>
 </html>
