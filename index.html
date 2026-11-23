@@ -1,0 +1,123 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SRP Parts Checkout</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 16px;
+      color: #263238;
+    }
+    .container {
+      max-width: 480px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+    }
+    h2 { text-align: center; }
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      background: #245a79;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    #reader { width: 100%; margin-top: 15px; }
+    .part {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    #status { margin-top: 12px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>SRP Parts Checkout</h2>
+  <p>Continuous Barcode Scanner Test</p>
+
+  <button onclick="startScanner()">Start Scanning</button>
+  <button onclick="stopScanner()">Stop Scanning</button>
+
+  <div id="reader"></div>
+
+  <h3>Scanned Parts (<span id="count">0</span>/30)</h3>
+  <div id="parts"></div>
+  <p id="status"></p>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+  let scanner = null;
+  let lastBarcode = "";
+  let lastScanTime = 0;
+  let count = 0;
+
+  async function startScanner() {
+    if (scanner) return;
+
+    scanner = new Html5Qrcode("reader");
+
+    try {
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 10 },
+        barcode => {
+          const now = Date.now();
+
+          if (barcode === lastBarcode &&
+              now - lastScanTime < 4000) {
+            lastScanTime = now;
+            return;
+          }
+
+          if (count >= 30) return;
+
+          lastBarcode = barcode;
+          lastScanTime = now;
+          count++;
+
+          document.getElementById("count").textContent = count;
+
+          const div = document.createElement("div");
+          div.className = "part";
+          div.textContent = count + ". " + barcode;
+          document.getElementById("parts").appendChild(div);
+
+          document.getElementById("status").textContent =
+            "Scanned: " + barcode;
+
+          if (count === 30) stopScanner();
+        }
+      );
+
+      document.getElementById("status").textContent =
+        "Camera running. Scan a barcode.";
+
+    } catch (err) {
+      scanner = null;
+      document.getElementById("status").textContent =
+        "Camera error: " + err;
+    }
+  }
+
+  async function stopScanner() {
+    if (!scanner) return;
+    try {
+      await scanner.stop();
+      scanner.clear();
+    } catch (err) {
+      console.error(err);
+    }
+    scanner = null;
+  }
+</script>
+</body>
+</html>
