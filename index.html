@@ -373,7 +373,7 @@ function updateType() {
   if (type === "Return") {
     $("fromSection").classList.remove("hidden");
     $("fromLocation").disabled = false;
-    $("fromLocation").value = "";
+    $("fromLocation").value = "CUST";
 
     $("destination").value = "STORE";
     $("destination").disabled = true;
@@ -384,7 +384,7 @@ function updateType() {
     $("fromLocation").disabled = true;
 
     $("destination").disabled = false;
-    $("destination").value = "";
+    $("destination").value = type === "Checkout" ? "CUST" : "";
   }
 }
 
