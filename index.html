@@ -1,159 +1,691 @@
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SRP Parts Checkout</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      padding: 16px;
-      color: #263238;
-    }
-    .container {
-      max-width: 480px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-    }
-    h2 { text-align: center; }
-    button {
-      width: 100%;
-      padding: 14px;
-      margin-top: 12px;
-      background: #245a79;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-    #reader { width: 100%; margin-top: 15px; }
-    .part {
-      padding: 10px;
-      border-bottom: 1px solid #ddd;
-    }
-    #status { margin-top: 12px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SRP Parts Checkout</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  font-family: Arial, sans-serif;
+  background: #eef2f5;
+  margin: 0;
+  padding: 15px;
+  color: #203040;
+}
+
+.container {
+  max-width: 600px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+h1 {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  text-align: center;
+  color: #657786;
+  margin-bottom: 25px;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+  margin-top: 15px;
+  margin-bottom: 6px;
+}
+
+input, select, textarea, button {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 6px;
+}
+
+input, select, textarea {
+  border: 1px solid #b9c5ce;
+  background: white;
+}
+
+button {
+  background: #22556e;
+  color: white;
+  border: none;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondary {
+  background: #647786;
+}
+
+.submit {
+  background: #287849;
+  font-weight: bold;
+}
+
+.logout {
+  background: #8b4545;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#reader {
+  width: 100%;
+  margin-top: 15px;
+}
+
+.status {
+  padding: 12px;
+  margin-top: 15px;
+  border-radius: 6px;
+  background: #eef2f5;
+  overflow-wrap: anywhere;
+}
+
+.success {
+  background: #e1f3e7;
+  color: #205b35;
+}
+
+.error {
+  background: #fbe5e5;
+  color: #a32222;
+}
+
+.part {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.barcode {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.quantity {
+  width: 75px;
+}
+
+.remove {
+  width: 42px;
+  background: #a83b3b;
+  margin: 0;
+  padding: 10px;
+}
+
+.manual {
+  display: flex;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.manual button {
+  width: 85px;
+  margin: 0;
+}
+
+.manual input {
+  flex: 1;
+  min-width: 0;
+}
+</style>
 </head>
+
 <body>
 <div class="container">
-  <h2>SRP Parts Checkout</h2>
-  <p>Continuous Barcode Scanner Test</p>
 
-  <button onclick="startScanner()">Start Scanning</button>
-  <button onclick="stopScanner()">Stop Scanning</button>
+<h1>SRP Parts Checkout</h1>
+<div class="subtitle">Scott River Pump & Irrigation</div>
+
+<div id="loginScreen">
+  <label for="password">Company Password</label>
+  <input id="password" type="password"
+         autocomplete="current-password">
+
+  <button id="loginButton" onclick="login()">
+    Log In
+  </button>
+
+  <div id="loginStatus" class="status">
+    Enter the company password to continue.
+  </div>
+</div>
+
+<div id="checkoutScreen" class="hidden">
+
+  <label for="employee">Employee</label>
+  <select id="employee"></select>
+
+  <label for="type">Transaction Type</label>
+  <select id="type" onchange="updateType()">
+    <option value="Checkout">Checkout</option>
+    <option value="Return">Return</option>
+    <option value="Transfer">Transfer</option>
+  </select>
+
+  <div id="workOrderSection">
+    <label for="workOrder">Work Order</label>
+    <input id="workOrder" type="text"
+           placeholder="Enter work order">
+  </div>
+
+  <div id="fromSection">
+    <label for="fromLocation">From Location</label>
+    <select id="fromLocation"></select>
+  </div>
+
+  <label for="destination">Destination</label>
+  <select id="destination"></select>
+
+  <label for="notes">Notes (optional)</label>
+  <textarea id="notes" rows="2"
+            maxlength="500"></textarea>
 
   <div id="reader"></div>
 
+  <button id="startButton" onclick="startScanner()">
+    Start Scanning
+  </button>
+
+  <button id="stopButton" class="secondary"
+          onclick="stopScanner()">
+    Stop Scanning
+  </button>
+
+  <div class="manual">
+    <input id="manualBarcode" type="text"
+           placeholder="Enter barcode manually">
+    <button onclick="addManual()">Add</button>
+  </div>
+
   <h3>Scanned Parts (<span id="count">0</span>/30)</h3>
-  <div id="parts"></div>
-  <p id="status"></p>
+
+  <div id="partsList"></div>
+
+  <button id="submitButton" class="submit"
+          onclick="submitBatch()">
+    Submit All Parts
+  </button>
+
+  <div id="status" class="status">
+    Ready to scan.
+  </div>
+
+  <button class="logout" onclick="logout()">
+    Log Out
+  </button>
+
+</div>
 </div>
 
-<script src="https://unpkg.com/html5-qrcode"></script>
 <script>
-  let scanner = null;
-  let lastBarcode = "";
-  let lastScanTime = 0;
-  let count = 0;
 
-  async function startScanner() {
-    if (scanner) return;
+const API =
+  "https://cool-moon-9afa.jenniferjoycox.workers.dev/";
 
-    scanner = new Html5Qrcode("reader");
+const $ = id => document.getElementById(id);
 
-    try {
-      await scanner.start(
-        { facingMode: "environment" },
-        { fps: 10 },
-        barcode => {
-          const now = Date.now();
+let token = localStorage.getItem("SRP_SESSION") || "";
+let items = [];
+let scanner = null;
+let scanning = false;
+let cameraBusy = false;
+let submitting = false;
+let lastScans = new Map();
 
-          if (barcode === lastBarcode &&
-              now - lastScanTime < 4000) {
-            lastScanTime = now;
-            return;
-          }
+async function api(action, extra = {}) {
+  const response = await fetch(API, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      ...extra,
+      action,
+      token
+    })
+  });
 
-          if (count >= 30) return;
+  const result = await response.json();
 
-          lastBarcode = barcode;
-          lastScanTime = now;
-          count++;
-
-          document.getElementById("count").textContent = count;
-
-          const div = document.createElement("div");
-          div.className = "part";
-          div.textContent = count + ". " + barcode;
-          document.getElementById("parts").appendChild(div);
-
-          document.getElementById("status").textContent =
-            "Scanned: " + barcode;
-
-          if (count === 30) stopScanner();
-        }
-      );
-
-      document.getElementById("status").textContent =
-        "Camera running. Scan a barcode.";
-
-    } catch (err) {
-      scanner = null;
-      document.getElementById("status").textContent =
-        "Camera error: " + err;
-    }
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || "Request failed.");
   }
 
-  async function stopScanner() {
-    if (!scanner) return;
-    try {
-      await scanner.stop();
-      scanner.clear();
-    } catch (err) {
-      console.error(err);
-    }
-    scanner = null;
+  return result;
+}
+
+function message(id, text, type = "") {
+  $(id).textContent = text;
+  $(id).className = "status " + type;
+}
+
+async function login() {
+  const password = $("password").value;
+
+  if (!password) {
+    message("loginStatus", "Enter the password.", "error");
+    return;
   }
-</script>
-  
-<button type="button" onclick="testConnection()">
-  Test Google Sheets Connection
-</button>
 
-<script>
-async function testConnection() {
-  const url = "https://cool-moon-9afa.jenniferjoycox.workers.dev/";
-  const status = document.getElementById("status");
-
-  status.textContent = "Testing connection...";
+  $("loginButton").disabled = true;
+  message("loginStatus", "Logging in...");
 
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        action: "connectionTest"
-      })
-    });
+    const result = await api("login", { password });
 
-    const result = await response.json();
+    token = result.token;
 
-    if (!response.ok || !result.success) {
-      throw new Error(result.message || "Connection failed.");
+    if (!token) {
+      throw new Error("No session received.");
     }
 
-    status.textContent = result.message;
+    localStorage.setItem("SRP_SESSION", token);
+    $("password").value = "";
+
+    await openCheckout();
 
   } catch (error) {
-    status.textContent = "Connection error: " + error.message;
+    message("loginStatus", error.message, "error");
+  } finally {
+    $("loginButton").disabled = false;
   }
 }
+
+function populate(select, rows, valueKey, labelKey) {
+  select.replaceChildren();
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Select...";
+  select.appendChild(placeholder);
+
+  rows.forEach(row => {
+    const option = document.createElement("option");
+    option.value = row[valueKey];
+    option.textContent = row[labelKey];
+    select.appendChild(option);
+  });
+}
+
+async function openCheckout() {
+  const result = await api("getSetupData");
+
+  populate(
+    $("employee"),
+    result.data.employees,
+    "Employee ID",
+    "Employee Name"
+  );
+
+  populate(
+    $("fromLocation"),
+    result.data.locations,
+    "Location ID",
+    "Location Name"
+  );
+
+  populate(
+    $("destination"),
+    result.data.locations,
+    "Location ID",
+    "Location Name"
+  );
+
+  const savedEmployee =
+    localStorage.getItem("SRP_EMPLOYEE");
+
+  if (savedEmployee) {
+    $("employee").value = savedEmployee;
+  }
+
+  updateType();
+
+  $("loginScreen").classList.add("hidden");
+  $("checkoutScreen").classList.remove("hidden");
+}
+
+function updateType() {
+  const type = $("type").value;
+
+  if (type === "Return") {
+    $("fromSection").classList.remove("hidden");
+    $("fromLocation").disabled = false;
+    $("fromLocation").value = "";
+
+    $("destination").value = "STORE";
+    $("destination").disabled = true;
+
+  } else {
+    $("fromSection").classList.add("hidden");
+    $("fromLocation").value = "STORE";
+    $("fromLocation").disabled = true;
+
+    $("destination").disabled = false;
+    $("destination").value = "";
+  }
+}
+
+async function startScanner() {
+  if (scanning || cameraBusy || submitting) return;
+
+  cameraBusy = true;
+  $("startButton").disabled = true;
+
+  try {
+    if (!scanner) {
+      scanner = new Html5Qrcode("reader");
+    }
+
+    await scanner.start(
+      { facingMode: "environment" },
+      { fps: 10 },
+      decodedText => {
+        if (!submitting) {
+          addBarcode(decodedText, true);
+        }
+      },
+      () => {}
+    );
+
+    scanning = true;
+    message("status", "Scanner running.");
+
+  } catch (error) {
+    message("status", "Camera error: " + error, "error");
+  } finally {
+    cameraBusy = false;
+    $("startButton").disabled = scanning;
+  }
+}
+
+async function stopScanner() {
+  if (!scanner || !scanning || cameraBusy) return;
+
+  cameraBusy = true;
+
+  try {
+    await scanner.stop();
+    scanning = false;
+    await scanner.clear();
+    scanner = null;
+  } catch (error) {
+    message("status", "Camera error: " + error, "error");
+  } finally {
+    cameraBusy = false;
+    $("startButton").disabled = scanning;
+  }
+}
+
+function addBarcode(value, automatic = false) {
+  if (submitting) return;
+
+  const barcode = String(value).trim();
+  if (!barcode) return;
+
+  if (automatic) {
+    const now = Date.now();
+    const last = lastScans.get(barcode) || 0;
+
+    if (now - last < 4000) return;
+
+    lastScans.set(barcode, now);
+  }
+
+  if (items.length >= 30) {
+    message("status", "Maximum 30 parts per batch.", "error");
+    return;
+  }
+
+  items.push({
+    barcode,
+    quantity: 1
+  });
+
+  renderParts();
+  message("status", "Added: " + barcode, "success");
+}
+
+function addManual() {
+  addBarcode($("manualBarcode").value);
+  $("manualBarcode").value = "";
+}
+
+function renderParts() {
+  const list = $("partsList");
+  list.replaceChildren();
+
+  $("count").textContent = items.length;
+
+  items.forEach((item, index) => {
+    const row = document.createElement("div");
+    row.className = "part";
+
+    const name = document.createElement("div");
+    name.className = "barcode";
+    name.textContent = item.barcode;
+
+    const qty = document.createElement("input");
+    qty.type = "number";
+    qty.min = "1";
+    qty.step = "1";
+    qty.value = item.quantity;
+    qty.className = "quantity";
+    qty.setAttribute("aria-label", "Quantity");
+
+    qty.oninput = () => {
+      item.quantity = Number(qty.value);
+    };
+
+    const remove = document.createElement("button");
+    remove.className = "remove";
+    remove.textContent = "X";
+    remove.setAttribute("aria-label", "Remove part");
+
+    remove.onclick = () => {
+      if (submitting) return;
+      items.splice(index, 1);
+      renderParts();
+    };
+
+    row.append(name, qty, remove);
+    list.appendChild(row);
+  });
+}
+
+async function submitBatch() {
+  if (submitting || cameraBusy) return;
+
+  const employeeId = $("employee").value;
+  const type = $("type").value;
+  const workOrder = $("workOrder").value.trim();
+  const fromLocation = $("fromLocation").value;
+  const destination = $("destination").value;
+
+  if (!employeeId) {
+    message("status", "Select an employee.", "error");
+    return;
+  }
+
+  if (!destination) {
+    message("status", "Select a destination.", "error");
+    return;
+  }
+
+  if (type === "Return" && !fromLocation) {
+    message("status", "Select From Location.", "error");
+    return;
+  }
+
+  if (type === "Checkout" &&
+      !workOrder && destination !== "USE") {
+    message("status", "Enter a work order.", "error");
+    return;
+  }
+
+  if (!items.length) {
+    message("status", "Scan at least one part.", "error");
+    return;
+  }
+
+  if (items.some(item =>
+      !Number.isSafeInteger(item.quantity) ||
+      item.quantity < 1)) {
+    message("status", "Check all quantities.", "error");
+    return;
+  }
+
+  const data = {
+    employeeId,
+    type,
+    workOrder,
+    fromLocation,
+    destination,
+    notes: $("notes").value,
+    items: items.map(item => ({ ...item }))
+  };
+
+  submitting = true;
+
+  const controls = Array.from(
+    $("checkoutScreen").querySelectorAll(
+      "input, select, textarea, button"
+    )
+  );
+
+  const previousStates =
+    controls.map(control => control.disabled);
+
+  controls.forEach(control => control.disabled = true);
+
+  message("status", "Saving transactions...");
+
+  try {
+    await stopScanner();
+    $("startButton").disabled = true;
+
+    const result = await api("saveBatch", { data });
+
+    localStorage.setItem("SRP_EMPLOYEE", employeeId);
+
+    items = [];
+    lastScans.clear();
+
+    renderParts();
+
+    $("workOrder").value = "";
+    $("notes").value = "";
+
+    message("status", result.message, "success");
+
+  } catch (error) {
+    message(
+      "status",
+      "Save not confirmed: " + error.message +
+      " Check Transactions before retrying.",
+      "error"
+    );
+  } finally {
+    submitting = false;
+
+    controls.forEach((control, index) => {
+      control.disabled = previousStates[index];
+    });
+
+    $("startButton").disabled = scanning;
+  }
+}
+
+async function logout() {
+  if (submitting || cameraBusy) return;
+
+  if (items.length &&
+      !confirm("Discard unsaved parts and log out?")) {
+    return;
+  }
+
+  await stopScanner();
+
+  try {
+    await api("logout");
+  } catch (error) {
+    message(
+      "status",
+      "Logout could not be confirmed. Try again.",
+      "error"
+    );
+    return;
+  }
+
+  localStorage.removeItem("SRP_SESSION");
+  localStorage.removeItem("SRP_EMPLOYEE");
+  token = "";
+  items = [];
+  lastScans.clear();
+
+  renderParts();
+
+  $("checkoutScreen").classList.add("hidden");
+  $("loginScreen").classList.remove("hidden");
+
+  message("loginStatus", "Logged out successfully.", "success");
+}
+
+$("password").addEventListener("keydown", event => {
+  if (event.key === "Enter") login();
+});
+
+$("manualBarcode").addEventListener("keydown", event => {
+  if (event.key === "Enter") addManual();
+});
+
+$("employee").addEventListener("change", () => {
+  localStorage.setItem("SRP_EMPLOYEE", $("employee").value);
+});
+
+async function initialize() {
+  if (!token) return;
+
+  $("loginButton").disabled = true;
+  message("loginStatus", "Checking saved login...");
+
+  try {
+    await api("verifySession");
+    await openCheckout();
+  } catch (error) {
+    message(
+      "loginStatus",
+      "Saved login could not be verified. Please log in again.",
+      "error"
+    );
+  } finally {
+    $("loginButton").disabled = false;
+  }
+}
+
+initialize();
 
 </script>
 </body>
