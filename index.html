@@ -126,29 +126,35 @@
 
 <script>
 async function testConnection() {
-const url = "https://script.google.com/macros/s/AKfycbz1t5Oj8kG54ejKjH2qGU_oWXnA0Zm2S2t7P_UbgCxyggdkuTgmUBEG6dlK-xqVlYMM/exec";
+  const url = "https://cool-moon-9afa.jenniferjoycox.workers.dev/";
+  const status = document.getElementById("status");
 
-
-  document.getElementById("status").textContent =
-    "Testing connection...";
+  status.textContent = "Testing connection...";
 
   try {
-    await fetch(url, {
+    const response = await fetch(url, {
       method: "POST",
-      mode: "no-cors",
       headers: {
-        "Content-Type": "text/plain"
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify({ action: "connectionTest" })
+      body: JSON.stringify({
+        action: "connectionTest"
+      })
     });
 
-    document.getElementById("status").textContent =
-      "Request sent. Check Apps Script executions to confirm receipt.";
-  } catch (err) {
-    document.getElementById("status").textContent =
-      "Connection error: " + err.message;
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "Connection failed.");
+    }
+
+    status.textContent = result.message;
+
+  } catch (error) {
+    status.textContent = "Connection error: " + error.message;
   }
 }
+
 </script>
 </body>
 </html>
